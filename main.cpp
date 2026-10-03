@@ -1,25 +1,47 @@
 #include <iostream>
 #include <thread>
+#include <list>
+#include <algorithm>
 
 using namespace std;
 
-void Thread1()
+list<int> l;
+
+void AddToList(int startVal)
 {
-  cout << 1 << endl;
+  for (int i = 0; i < 10; ++i)
+  {
+    int valToAdd = startVal + i;
+    l.push_back(valToAdd);
+    cout << "[AddToList] An element has been added: " << valToAdd << endl;
+  }
 }
 
-void Thread2()
+void ListContains(int targetVal)
 {
-  cout << 2 << endl;
+  for (int i = 0; i < 10; ++i)
+  {
+    auto it = find(l.begin(), l.end(), targetVal);
+    if (it != l.end())
+    {
+      cout << "[ListContains] Attempt " << i + 1 << ": the element " << targetVal << " is in the list" << endl;
+    }
+    else
+    {
+      cout << "[ListContains] Attempt " << i + 1 << ": the element " << targetVal << " is not in the list" << endl;
+    }
+  }
 }
 
 int main()
 {
-  thread t1(Thread1);
-  thread t2(Thread2);
+  int initialVal = 42;
 
-  t1.detach();
-  t2.detach();
+  thread t1(AddToList, initialVal);
+  thread t2(ListContains, initialVal);
+
+  t1.join();
+  t2.join();
 
   return 0;
 }
