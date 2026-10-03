@@ -18,5 +18,8 @@ int main()
   thread t1(Thread1);
   thread t2(Thread2);
 
+  t1.detach();
+  t2.detach();
+
   return 0;
 }
