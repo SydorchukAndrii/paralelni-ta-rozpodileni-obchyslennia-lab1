@@ -1,50 +1,102 @@
 #include <iostream>
+#include <string>
 #include <thread>
-#include <list>
-#include <algorithm>
 #include <mutex>
-#include <chrono>
+#include <utility>
 
 using namespace std;
 
-list<int> l;
-mutex mtx;
-
-void AddToList(int valToAdd)
+class someData
 {
-  lock_guard<mutex> lock(mtx);
-  l.push_back(valToAdd);
-  cout << "[AddToList] An element has been added: " << valToAdd << endl;
-}
+public:
+  string firstName;
+  string lastName;
+  string address;
+  int age;
 
-void ListContains(int targetVal, int attempt)
+  someData() : firstName(""), lastName(""), address(""), age(0) {}
+
+  void print() const
+  {
+    cout << "Name: " << firstName << " " << lastName
+         << ", Address: " << address
+         << ", Age: " << age << endl;
+  }
+};
+
+class exchangePerson
 {
-  lock_guard<mutex> lock(mtx);
-  auto it = find(l.begin(), l.end(), targetVal);
-  if (it != l.end())
+public:
+  someData data;
+  mutex mtx;
+
+  exchangePerson() = default;
+
+  static void JohnDoe(exchangePerson &person)
   {
-    cout << "[ListContains] Attempt " << attempt << ": the element " << targetVal << " is in the list" << endl;
+    lock_guard<mutex> lock(person.mtx);
+    person.data.firstName = "John";
+    person.data.lastName = "Doe";
+    person.data.address = "Unknown";
+    person.data.age = 120;
+    cout << "[JohnDoe Thread] Data initialized for John Doe" << endl;
   }
-  else
+
+  static void JacobSmith(exchangePerson &person)
   {
-    cout << "[ListContains] Attempt " << attempt << ": the element " << targetVal << " is not in the list" << endl;
+    lock_guard<mutex> lock(person.mtx);
+    person.data.firstName = "Jacob";
+    person.data.lastName = "Smith";
+    person.data.address = "Known";
+    person.data.age = 1;
+    cout << "[JacobSmith Thread] Data initialized for Jacob Smith" << endl;
   }
-}
+
+  static void Swap(exchangePerson &a, exchangePerson &b)
+  {
+    if (&a == &b)
+    {
+      cout << "[Swap] Objects have the same address. Swap aborted." << endl;
+      return;
+    }
+
+    lock(a.mtx, b.mtx);
+
+    lock_guard<mutex> lockA(a.mtx, adopt_lock);
+    lock_guard<mutex> lockB(b.mtx, adopt_lock);
+
+    cout << "\n--- Before Swap ---" << endl;
+    cout << "Person 1: ";
+    a.data.print();
+    cout << "Person 2: ";
+    b.data.print();
+
+    swap(a.data, b.data);
+
+    cout << "\n--- After Swap ---" << endl;
+    cout << "Person 1: ";
+    a.data.print();
+    cout << "Person 2: ";
+    b.data.print();
+    cout << "------------------\n"
+         << endl;
+  }
+};
 
 int main()
 {
-  int initialVal = 42;
+  exchangePerson p1;
+  exchangePerson p2;
 
-  for (int i = 0; i < 10; ++i)
-  {
-    thread tAdd(AddToList, initialVal + i);
-    thread tContains(ListContains, initialVal, i + 1);
+  thread t1(exchangePerson::JohnDoe, ref(p1));
+  thread t2(exchangePerson::JacobSmith, ref(p2));
 
-    tAdd.detach();
-    tContains.detach();
-  }
+  t1.detach();
+  t2.detach();
 
-  this_thread::sleep_for(chrono::milliseconds(500));
+  thread tSwap(exchangePerson::Swap, ref(p1), ref(p2));
+
+  tSwap.join();
 
   return 0;
 }
