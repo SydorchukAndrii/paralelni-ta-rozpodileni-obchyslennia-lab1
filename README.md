@@ -1,0 +1,1 @@
+# paralelni-ta-rozpodileni-obchyslennia-lab1
