@@ -60,10 +60,10 @@ public:
       return;
     }
 
-    lock(a.mtx, b.mtx);
+    unique_lock<mutex> lockA(a.mtx, defer_lock);
+    unique_lock<mutex> lockB(b.mtx, defer_lock);
 
-    lock_guard<mutex> lockA(a.mtx, adopt_lock);
-    lock_guard<mutex> lockB(b.mtx, adopt_lock);
+    lock(lockA, lockB);
 
     cout << "\n--- Before Swap ---" << endl;
     cout << "Person 1: ";
